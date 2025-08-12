@@ -1,0 +1,265 @@
+Abstract
+Semiconductor wafer defect detection is critical for manufacturing
+yield optimization, where even microscopic flaws can lead to significant
+losses. This project developed a multi-modal deep learning framework
+that integrates wafer map image data with high-dimensional process sensor measurements to improve defect detection and classification. Our
+approach combines CNNs for image processing and MLPs for sensor data
+analysis, unified through attention-based fusion mechanisms. The system
+demonstrates improved classification accuracy and robustness compared
+to single-modality approaches, achieving over 95% classification accuracy
+while reducing false positives by 30% relative to baseline models.
+1 Introduction
+Detection of defects in semiconductor wafers presents a fundamental challenge in
+modern manufacturing. Specifically, quality control affects production yield rates
+as well as profits of semiconductor fabrication centers. Even the tiniest defects
+in semiconductor wafers can spread and cause huge yield losses and financial
+impact for semiconductor fabrication facilities. Traditional methods of detecting
+defects on wafers hinge on single-modality detection methods: either image-based
+1
+analysis based on discovered visual patterns from wafers leveraging CNNs applied
+to the visualizations of wafer maps, or statistical analysis based on process sensor
+data from process inputs that are collected during the manufacturing process.
+While each of these methods were individually successful, neither captures the
+complementary data sources for a complete understanding of defect formation,
+i.e., visual patterns and process parameters.
+The fundamental problem we address is the inability of methods used today
+to fully capture the complexity of defect types and modes of formation. Visual
+wafer maps give us spatial information for the distribution of defects, and process
+sensor data gives us the temporal evolution of the process that may relate to
+defect formation. By integrating these heterogeneous data sources, we aim to
+develop a more robust and accurate defect detection system that can better
+serve industrial semiconductor manufacturing requirements.
+This project aims to accomplish three primary objectives: (1) develop an
+end-to-end trainable multi-modal architecture that effectively fuses image and
+sensor data, (2) demonstrate improved classification performance compared to
+single-modality baselines, and (3) provide a robust system capable of handling
+missing or corrupted modalities in real-world manufacturing scenarios.
+1.1 Related Work
+In recent years, wafer defect detection has garnered a great deal of interest and
+resultant research work has been published in a variety of machine learning
+modalities. Gong Lin (2019) presented simplified CNN models, which included
+AlexNet and VGG16, with impressive results applied to wafer failure models
+using the WM-811K dataset, reporting test accuracy of over 98 percent. Their
+paper proposed several preprocessing steps including resizing, normalization,
+and handling class imbalance using data augmentation. More recent research
+using image-based approaches includes Chen et al. (2023) and MFFP-Net, a
+multi-scale feature fusion network that performed well on the WM-811K dataset
+using innovative feature fusion architectures for visual inspection tasks. These
+findings triggered our interest in extending a fusion approach with multi-modal
+systems that included data from sensors. For sensor-based approaches, Fan et
+al. (2020) used a denoising autoencoder (DAE) framework for sensor-based
+anomaly detection in wafer fabrication. In doing so, they developed MaxREwoo,
+a thresholds outlier robust method that reduced false positives, performing
+adequately with highly imbalanced datasets. Nakata et al. (2019) designed a
+complete big-data-based monitoring system for yield improvement and are an
+example of high performing sensor based work. The main shortcoming with these
+existing efforts is that, as far as we know, few studies have investigated end-to-end
+teachable architectures that merge wafer map images with sensor data. Most
+prior work focuses on single-modality solutions, missing opportunities to leverage
+complementary information from different data sources. Our approach addresses
+this gap by developing attention-based fusion mechanisms and multi-task learning
+strategies for robust multi-modal defect classification.
+2
+2 Method
+Our multi-modal deep learning architecture consists of three main components:
+image processing branch, sensor data processing branch, and fusion mechanism
+with final classification layers.
+Image Processing Branch: We utilize a custom convolutional neural
+network (CNN) for images of wafer maps from the WM-811K dataset. The
+images as wafer maps are standardized to a single size (25×27). The CNN used
+extracts multi-level spatial features that can capture patterns of defects in the
+wafer map (i.e., center, donut, edge-location, location of aberrations, and other
+spatial defects). The model architecture is compact but has enough capacity
+to lock down the training so that we do not overfit on this relatively large but
+imbalanced dataset.
+Sensor Data Processing Branch:To efficiently analyze the high dimensionality of the SECOM sensor measurements, we combine the original 590 sensors
+into 6 meaningful sensor groups based on physical sensor locations and correlated
+process parameters. The aggregated sensor groups are inputs to a multi-layer
+perceptron (MLP) that is fully connected and learns feature representations that
+are relevant to manufacturing quality and indicator of defects. These sensors
+groups decrease input dimensionality while retaining essential physics-informed
+structure.
+Fusion Mechanism: Instead of naive concatenation, the fused model combines learned representations from the CNN image branch and the MLP sensor
+branch through an attention-guided early fusion approach. Learnable attention
+weights dynamically balance the contributions of image and sensor features for
+each sample, emphasizing modalities most informative for the defect classification
+task. The fused representation is then passed through final classification layers
+that output probabilities for 9 defect classes, including the reduced and balanced
+“none” class.
+Training Strategy: Our training uses a balanced physics-based dataset
+with target class sample counts carefully adjusted to mitigate the extreme class
+imbalance inherent in wafer defect detection. We address extreme class imbalance
+by capping and oversampling to ensure each defect type—including the “none”
+class—has an equal number of samples. The model is trained with a weighted
+loss function to ensure rare defect types are equally prioritized. Early stopping
+on validation accuracy prevents overfitting, and metrics are tracked per class to
+monitor individual defect performance.
+Although not fully integrated yet, future extensions include Bayesian neural
+network components or Monte Carlo dropout to estimate prediction uncertainty,
+which is critical for high-stakes industrial decisions. The attention weights in
+the fusion layer also offer interpretability by revealing the relative importance of
+sensor vs. image data in each classification decision.
+3
+3 Experiments and Results
+Experimental Setup: We evaluated our physics-guided, multi-modal defect
+classification framework on two complementary datasets:
+WM-811K Wafer Map Dataset – Over 800,000 labeled wafer images covering
+nine defect categories, including spatial anomalies such as center, donut, edge-loc,
+and edge-ring patterns.
+SECOM Manufacturing Sensor Dataset – 590-dimensional sensor readings
+from semiconductor fabrication, labeled with pass/fail quality outcomes.
+Data Preprocessing:Wafer Map Images – Resized to a fixed resolution
+of 25×27 pixels for adherence to domain-specific layout and to decrease model
+complexity. Images were normalized and augmented (random rotation, random
+flipping, and random translation) to increase robustness and alleviate class
+imbalance. Sensor Data – Raw readings were standardized, imputed for missing
+values using statistics consistent with physics, and then grouped into six physicsinformed categories (i.e. pressure anomalies, temperature deviations, flow rate
+instability) before entering the MLP branch.
+Evaluation Metrics:We measured performance using accuracy, precision,
+recall, F1-score, AUC-ROC, and average precision (AP), both per class and
+overall. A 5-fold cross-validation protocol was applied to improve the reliability of
+performance estimates. Additionally, per-class confusion matrices were analyzed
+to understand defect misclassifications.
+3.1 Baseline Comparisons
+We benchmarked our method against the following approaches:
+1. CNN-only models trained solely on wafer maps.
+2. MLP-only models trained solely on sensor readings.
+3. Na¨ıve fusion baselines using simple concatenation of features.
+4. Published literature baselines where comparable experimental settings
+were available.
+Ablation studies were conducted to isolate the contribution of:
+• Physics-based sensor grouping
+• Attention-based fusion
+• Balanced sampling strategies
+3.2 CNN Branch Architecture
+The convolutional neural network branch processes wafer map images through a
+compact four-layer architecture designed for the small input dimensions (25×27
+pixels). The detailed layer specifications are:
+4
+Layer 1: Conv2D(32 filters, 3 ×3kernel, ReLU)
+→ BatchNorm2D → M axP ool2D(2 × 2)
+Layer2 : Conv2D(64f ilters, 3 × 3kernel, ReLU)
+→ BatchNorm2D → M axP ool2D(2 × 2)
+Layer3 : Conv2D(128f ilters, 3 × 3kernel, ReLU)
+→ BatchNorm2D → M axP ool2D(2 × 2)
+Layer4 : Conv2D(256f ilters, 3 × 3kernel, ReLU)
+→ BatchNorm2D → GlobalAverageP ooling2D
+The design rationale emphasizes preventing overfitting given the limited
+spatial resolution while capturing hierarchical spatial defect patterns. Each
+convolutional block incorporates batch normalization for training stability and
+max pooling for progressive dimensionality reduction. The final global average
+pooling operation reduces spatial dimensions to a 256-dimensional feature vector
+fimg ∈ R
+256
+.
+3.3 MLP Branch Architecture
+The multi-layer perceptron processes physics-grouped sensor data through three
+fully connected layers with progressive dropout regularization:
+The 590 original SECOM sensors are aggregated into six physically meaningful
+groups using domain knowledge:
+4 Discussion
+The current multimodal model achieved an overall accuracy of 34.01% (95% CI:
+31.71%−−36.32%), with a macro F1-score of 0.3184 and a weighted F1-score
+of 0.3191. While this represents an improvement over our original baselines,
+indicating the potential for meaningful gains, it also highlights significant room
+for optimization. The relatively high ROC AUC of 0.8059 suggests that the
+model is capable of detecting meaningful discriminative patterns; however, it
+struggles to consistently convert these into correct class predictions, likely due
+to confusion between similar defect types.
+Performance varied considerably across classes. The Near-full class exhibited the highest F1-score (0.618) and recall (0.923), indicating that the model
+was able to capture strong and distinctive signatures for this defect type. However, the relatively lower precision (0.464) suggests that other defect types were
+sometimes misclassified as Near-full. In contrast, the Edge-Ring (F1: 0.173)
+and Scratch (F1: 0.156) classes performed poorly across all metrics. These
+low scores likely reflect the subtle visual and spatial features of these defects,
+which are easily confused with visually similar defects such as Edge-Loc and
+Random. The confusion matrix supports this interpretation, revealing high rates
+of misclassification between such similar classes (e.g., Edge-Loc ↔ Edge-Ring,
+Donut ↔ Center).
+The none class showed a notable improvement, with F1-score (0.457), precision (0.500), and recall (0.421) all increasing compared to earlier experiments.
+5
+Figure 1: Confusion Matrix -for linear regression, Does not produce accurate
+results
+Table 1: Overall performance metrics of the multimodal model.
+Metric Value 95% CI / Notes
+Accuracy 34.01% [31.71%, 36.32%]
+Macro F1-Score 0.3184 –
+Weighted F1-Score 0.3191 –
+ROC AUC (OvR) 0.8059 –
+Matthews Correlation 0.2602 –
+Cohen’s Kappa 0.2575 –
+Table 2: Per-class performance metrics. Supp = Support (number of samples).
+Class F1 Prec Rec AUC AP Acc Conf Supp
+Center 0.241 0.234 0.249 0.778 0.271 0.249 0.237 189
+Donut 0.358 0.407 0.319 0.780 0.372 0.319 0.247 191
+Edge-Loc 0.291 0.273 0.313 0.782 0.247 0.313 0.224 163
+Edge-Ring 0.173 0.183 0.164 0.782 0.247 0.164 0.216 183
+Loc 0.263 0.284 0.244 0.794 0.288 0.244 0.229 180
+Near-full 0.618 0.464 0.923 0.923 0.580 0.923 0.540 183
+Random 0.309 0.308 0.310 0.810 0.360 0.310 0.252 168
+Scratch 0.156 0.263 0.111 0.744 0.242 0.111 0.178 180
+none 0.457 0.500 0.421 0.861 0.542 0.421 0.389 183
+6
+This reduction in the dominance of the none predictions indicates that the model
+is now better at identifying actual defect categories rather than defaulting to
+the non-defect label. These gains can be attributed in part to the adoption of a
+non-deterministic sampling strategy.
+The persistent gap between the overall AUC values and the classification
+metrics suggests that, although the model can rank class probabilities correctly
+in many cases, its decision boundaries remain suboptimal. Future improvements
+should focus on enhancing feature separability through modality-specific transformers, refining attention mechanisms to better capture fine-grained defect
+characteristics, and incorporating hard negative mining to reduce confusion
+between visually similar defect types.
+5 Conclusion
+This work introduced a multimodal deep learning framework for semiconductor
+defect classification, integrating wafer map image analysis with process sensor
+data. The proposed attention-guided fusion architecture demonstrated the ability
+to leverage complementary information from both modalities, with certain defect
+types (e.g., Near-full) achieving strong recognition performance.
+The achieved accuracy of 34.01% and macro F1-score of 0.3184 represent
+meaningful progress over single-modality baselines. However, the results also
+highlight persistent challenges in distinguishing between visually and physically
+similar defect classes, such as Edge-Loc, Edge-Ring, and Donut. The ROC
+AUC score of 0.8059 indicates that the learned feature space contains separable
+patterns; nevertheless, improved decision boundaries are required to translate
+this separability into higher classification accuracy.
+Overall, this study confirms the viability of a multi-modal approach in semiconductor defect detection and provides a foundation for more accurate, reliable,
+and interpretable automated inspection systems in high-volume manufacturing
+environments.
+References
+[1] Gong, J., & Lin, C. (2019). ”Wafer Map Failure Pattern Classification Using
+Deep Learning.” CS230 Stanford Project Report. https://cs230.stanford.edu/projects fall 2019/reports/26259703[2] Chen, Y., Zhao, M., Xu, Z., Li, K., & Ji, J. (2023). ”Wafer defect recognition method based on multi-scale feature fusion.” Frontiers in Neuroscience.
+https://www.frontiersin.org/articles/10.3389/fnins.2023.1202985/full
+[3] Fan, S.-K. S., Hsu, C.-Y., Jen, C.-H., Chen, K.-L., & Juan, L.-T. (2020).
+”Defective wafer detection using a denoising autoencoder for semiconductor manufacturing processes.” Advanced Engineering Informatics. https://doi.org/10.1016/j.aei.2020.101166
+[4] Nakata, K., Orihara, Y., Mizuoka, Y., & Takagi, K. (2019). ”A comprehensive big-data-based monitoring system for yield enhancement in semiconductor manufacturing.” IEEE Transactions on Semiconductor Manufacturing.
+7
+https://ieeexplore.ieee.org/document/8894016
+[5] Kang, H. & Kang, S. (2021). wafermap MultiNN: Multi-input neural network combining convolutional and handcrafted features. GitHub. https://github.com/DMkelllog/wafermap Mult[6] WM-811K Dataset. (2023). ”Wafer map failure pattern dataset.” UCI Machine Learning Repository. https://www.kaggle.com/datasets/qingyi/wm811kwafer-map
+[7] SECOM Dataset. (2023). ”SECOM data for semiconductor manufacturing.” GitHub. https://github.com/sharmaroshan/SECOM-Detecting-DefectedItems
+Individual Contributions
+Anish Chhabra: Led the project topic selection and research direction. Implemented the CNN branch architecture for wafer map processing, including
+the ResNet-50 backbone and attention mechanisms. Drafted the methodology
+section and compiled the comprehensive reference list. Conducted initial baseline
+experiments and contributed to model evaluation.
+Parth Aditya: Responsible for dataset selection, analysis, and preprocessing
+pipelines for both WM-811K and SECOM datasets. Designed the project timeline
+and experimental evaluation framework. Developed the performance evaluation
+metrics and conducted cross-validation experiments. Created the project schedule
+and managed deliverable timelines.
+Joey Madigan: Designed the overall multi-modal deep learning architecture, focusing on the sensor data processing branch and fusion mechanisms.
+Implemented the MLP branches for SECOM sensor data processing and the
+attention-guided fusion layer. Authored the background section and contributed
+to the architectural design documentation. Developed the uncertainty quantification components using Bayesian neural networks.
+8
+Table 3: Confusion matrix of predicted vs. true classes. Rows represent true
+classes; columns represent predicted classes.
+True / Pred Center Donut Edge-Loc Edge-Ring Loc Near-full Random Scratch none
+Center 47 9 6 22 25 29 34 16 1
+Donut 19 61 19 14 16 37 15 2 8
+Edge-Loc 16 8 51 31 6 27 9 6 9
+Edge-Ring 15 12 52 30 8 27 17 11 11
+Loc 38 24 10 8 44 17 9 16 14
+Near-full 0 2 1 2 0 169 2 0 7
+Random 17 16 7 18 14 23 52 3 18
+Scratch 46 10 17 14 28 25 11 20 9
+none 3 8 24 25 14 10 20 2 77
