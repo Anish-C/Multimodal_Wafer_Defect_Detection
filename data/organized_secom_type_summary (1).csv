@@ -1,0 +1,10 @@
+sensor_type,count,percentage,column_range,start_index,end_index
+PRESSURE,226,38.3%,Columns 0-225,0,225
+FLOW_RATE,166,28.1%,Columns 226-391,226,391
+INACTIVE,93,15.8%,Columns 392-484,392,484
+OTHER,42,7.1%,Columns 485-526,485,526
+POWER_RF,30,5.1%,Columns 527-556,527,556
+ENDPOINT,19,3.2%,Columns 557-575,557,575
+TEMPERATURE,7,1.2%,Columns 576-582,576,582
+STATUS,6,1.0%,Columns 583-588,583,588
+VOLTAGE_BIAS,1,0.2%,Columns 589-589,589,589
